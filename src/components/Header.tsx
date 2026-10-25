@@ -1,8 +1,9 @@
 interface HeaderProps {
   appName: string;
+  onNewLink: () => void;
 }
 
-export default function Header({ appName }: HeaderProps) {
+export default function Header({ appName, onNewLink }: HeaderProps) {
   return (
     <header className="sticky top-0 z-10 border-b border-gray-200 bg-white">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
@@ -16,6 +17,7 @@ export default function Header({ appName }: HeaderProps) {
           </button>
           <button
             type="button"
+            onClick={onNewLink}
             className="rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-600"
           >
             + 새 링크

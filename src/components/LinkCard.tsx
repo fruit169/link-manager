@@ -17,6 +17,17 @@ function hostnameOf(url: string): string {
   }
 }
 
+/** next.config.ts의 images.remotePatterns에 등록된 호스트만 이미지 최적화를 거친다. */
+const OPTIMIZED_IMAGE_HOSTS = ["picsum.photos"];
+
+function isOptimizedHost(url: string): boolean {
+  try {
+    return OPTIMIZED_IMAGE_HOSTS.includes(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
 function ImageFallback({ title, url }: { title: string; url: string }) {
   const initial = title.trim().charAt(0).toUpperCase() || "?";
   return (
@@ -49,6 +60,7 @@ export default function LinkCard({ link, folderName }: LinkCardProps) {
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             className="object-cover"
+            unoptimized={!isOptimizedHost(imageUrl)}
             onError={() => setImageFailed(true)}
           />
         ) : (

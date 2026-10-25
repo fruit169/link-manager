@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import AddLinkModal, { type NewLinkInput } from "@/components/AddLinkModal";
 import FolderSidebar from "@/components/FolderSidebar";
 import Header from "@/components/Header";
 import LinkGrid from "@/components/LinkGrid";
@@ -9,11 +10,17 @@ import type { Folder, FolderFilter, Link } from "@/lib/types";
 interface LinkVaultProps {
   appName: string;
   folders: Folder[];
-  links: Link[];
+  initialLinks: Link[];
 }
 
-export default function LinkVault({ appName, folders, links }: LinkVaultProps) {
+export default function LinkVault({
+  appName,
+  folders,
+  initialLinks,
+}: LinkVaultProps) {
+  const [links, setLinks] = useState<Link[]>(initialLinks);
   const [selected, setSelected] = useState<FolderFilter>("all");
+  const [isAddOpen, setIsAddOpen] = useState(false);
 
   const counts = useMemo(() => {
     const base = { all: links.length } as Record<FolderFilter, number>;
@@ -25,9 +32,24 @@ export default function LinkVault({ appName, folders, links }: LinkVaultProps) {
   const visible =
     selected === "all" ? links : links.filter((l) => l.folderId === selected);
 
+  const closeAdd = useCallback(() => setIsAddOpen(false), []);
+
+  const handleAdd = (input: NewLinkInput) => {
+    const newLink: Link = { id: crypto.randomUUID(), ...input };
+    setLinks((prev) => [newLink, ...prev]);
+    // 현재 필터에 가려지는 폴더면 새 링크가 보이도록 전환
+    if (selected !== "all" && selected !== newLink.folderId) {
+      setSelected(newLink.folderId);
+    }
+    setIsAddOpen(false);
+  };
+
+  // 모달의 폴더 기본값: 현재 보고 있는 폴더, '전체'면 첫 폴더
+  const defaultFolderId = selected === "all" ? folders[0].id : selected;
+
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <Header appName={appName} />
+      <Header appName={appName} onNewLink={() => setIsAddOpen(true)} />
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-4 sm:px-6 md:flex-row md:gap-6 md:py-6">
         <FolderSidebar
           folders={folders}
@@ -37,6 +59,13 @@ export default function LinkVault({ appName, folders, links }: LinkVaultProps) {
         />
         <LinkGrid links={visible} folders={folders} />
       </main>
+      <AddLinkModal
+        open={isAddOpen}
+        folders={folders}
+        defaultFolderId={defaultFolderId}
+        onClose={closeAdd}
+        onAdd={handleAdd}
+      />
     </div>
   );
 }
