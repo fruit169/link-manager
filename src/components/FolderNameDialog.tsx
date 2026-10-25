@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import Dialog from "@/components/Dialog";
 
 interface FolderNameDialogProps {
@@ -22,11 +22,22 @@ export default function FolderNameDialog({
 }: FolderNameDialogProps) {
   const [name, setName] = useState(initialName);
   const [error, setError] = useState<string | null>(null);
+  // 중복 제출 방지: ref 는 같은 틱의 연속 클릭을, state 는 버튼 비활성화를 맡는다
+  const busyRef = useRef(false);
+  const [busy, setBusy] = useState(false);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
     const result = onSubmit(name);
-    if (result) setError(result);
+    if (result) {
+      // 실패하면 다시 시도할 수 있게 푼다. 성공하면 부모가 다이얼로그를 닫는다.
+      setError(result);
+      busyRef.current = false;
+      setBusy(false);
+    }
   };
 
   return (
@@ -37,7 +48,7 @@ export default function FolderNameDialog({
       >
         {title}
       </h2>
-      <form onSubmit={handleSubmit} noValidate className="mt-5 space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="mt-5 space-y-4" aria-busy={busy}>
         <div>
           <label
             htmlFor="folder-name"
@@ -71,7 +82,11 @@ export default function FolderNameDialog({
           >
             취소
           </button>
-          <button type="submit" className="btn-primary px-5 py-2.5 text-[15px]">
+          <button
+            type="submit"
+            disabled={busy}
+            className="btn-primary px-5 py-2.5 text-[15px] disabled:opacity-50"
+          >
             {submitLabel}
           </button>
         </div>
