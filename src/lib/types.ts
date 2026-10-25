@@ -1,4 +1,4 @@
-/** 폴더 고유 ID. DB에서는 uuid, 가져오기 전 localStorage 데이터에서는 임의 문자열이다. */
+/** 폴더 고유 ID. DB에서는 int8 을 문자열로 바꾼 값, 저장 전 임시 항목과 예전 localStorage 데이터에서는 uuid 등 임의 문자열이다. */
 export type FolderId = string;
 
 /** 사이드바 필터. "all"은 가상 항목(전체)이고 나머지는 폴더 ID다. */
@@ -6,7 +6,7 @@ export type FolderFilter = "all" | FolderId;
 
 export const ALL_FILTER = "all" as const;
 
-/** localStorage 시절 '미분류' 폴더의 고정 ID. DB에서는 사용자별 uuid를 쓴다. */
+/** localStorage 시절 '미분류' 폴더의 고정 ID. DB에서는 사용자별 int8 id 를 쓴다. */
 export const UNCATEGORIZED_FOLDER_ID = "uncategorized";
 export const UNCATEGORIZED_FOLDER_NAME = "미분류";
 

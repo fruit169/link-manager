@@ -38,6 +38,11 @@ export interface VaultStoreState extends VaultState {
   error: string | null;
   /** 직전 불러오기에서 localStorage 데이터를 가져왔는지 (개수) */
   imported: { folders: number; links: number } | null;
+  /**
+   * 이 세션에서 화면용 임시 id 가 서버(int8) id 로 바뀐 기록: 임시 id → 서버 id.
+   * 화면이 임시 id 를 들고 있어도(예: 방금 만든 폴더 선택) 같은 항목을 가리키게 한다.
+   */
+  aliases: Record<string, string>;
 }
 
 const initialState: VaultStoreState = {
@@ -45,6 +50,7 @@ const initialState: VaultStoreState = {
   user: null,
   error: null,
   imported: null,
+  aliases: {},
   folders: [],
   links: [],
 };
@@ -53,6 +59,18 @@ let state: VaultStoreState = initialState;
 let supabase: SupabaseClient | null = null;
 let loadStarted = false;
 const listeners = new Set<() => void>();
+
+/**
+ * 서버 insert 가 아직 끝나지 않은 항목의 임시 id → 서버 id 약속.
+ * 그 사이에 들어온 수정·이동·삭제는 settled() 로 서버 id 가 나올 때까지 기다린다.
+ */
+const pending = new Map<string, Promise<string>>();
+
+/** 임시 id 면 서버 id 가 나올 때까지 기다리고, 아니면 그대로 돌려준다. */
+async function settled(id: string): Promise<string> {
+  const promised = pending.get(id);
+  return promised ? await promised : id;
+}
 
 function client(): SupabaseClient {
   if (!supabase) supabase = createClient();
@@ -154,6 +172,46 @@ function commit(next: VaultState, persist: () => Promise<void>) {
   persist().catch(recover);
 }
 
+/**
+ * 새 항목 추가: 화면에는 임시 id 로 먼저 그리고, 서버가 만든 id 를 받아 바꿔 끼운다.
+ * @param tempId  vault.ts 가 만든 임시 id (uuid 문자열)
+ * @param persist 서버에 insert 하고 생성된 id 를 돌려주는 함수
+ * @param replace 상태 안의 임시 id 를 서버 id 로 바꾸는 순수 함수
+ */
+function commitInsert(
+  next: VaultState,
+  tempId: string,
+  persist: () => Promise<string>,
+  replace: (state: VaultState, serverId: string) => VaultState,
+) {
+  setState({ folders: next.folders, links: next.links, error: null });
+  const promise = persist();
+  pending.set(tempId, promise);
+  promise
+    .then((serverId) => {
+      const current = getSnapshot();
+      const replaced = replace({ folders: current.folders, links: current.links }, serverId);
+      setState({ ...replaced, aliases: { ...current.aliases, [tempId]: serverId } });
+    })
+    .catch(recover)
+    .finally(() => pending.delete(tempId));
+}
+
+function replaceLinkId(tempId: string) {
+  return (s: VaultState, serverId: string): VaultState => ({
+    ...s,
+    links: s.links.map((l) => (l.id === tempId ? { ...l, id: serverId } : l)),
+  });
+}
+
+function replaceFolderId(tempId: string) {
+  return (s: VaultState, serverId: string): VaultState => ({
+    folders: s.folders.map((f) => (f.id === tempId ? { ...f, id: serverId } : f)),
+    // 폴더 저장이 끝나기 전에 그 폴더로 넣은 링크도 따라간다
+    links: s.links.map((l) => (l.folderId === tempId ? { ...l, folderId: serverId } : l)),
+  });
+}
+
 export interface VaultActions {
   addLink: (input: NewLinkInput) => void;
   updateLink: (id: string, input: NewLinkInput) => Result<void>;
@@ -176,28 +234,37 @@ export function useVault(): VaultStoreState & VaultActions {
     const link = next.links[0];
     const userId = current.user?.id;
     if (!userId) return;
-    commit(next, () => repo.insertLink(client(), userId, link));
+    commitInsert(
+      next,
+      link.id,
+      async () => repo.insertLink(client(), userId, link, await settled(link.folderId)),
+      replaceLinkId(link.id),
+    );
   }, []);
 
   const updateLink = useCallback((id: string, input: NewLinkInput): Result<void> => {
     const result = updateLinkPure(getSnapshot(), id, input);
     if (!result.ok) return result;
     const link = result.value.links.find((l) => l.id === id)!;
-    commit(result.value, () => repo.updateLink(client(), link));
+    commit(result.value, async () =>
+      repo.updateLink(client(), { ...link, id: await settled(link.id) }, await settled(link.folderId)),
+    );
     return { ok: true, value: undefined };
   }, []);
 
   const deleteLink = useCallback((id: string): Result<void> => {
     const result = deleteLinkPure(getSnapshot(), id);
     if (!result.ok) return result;
-    commit(result.value, () => repo.deleteLink(client(), id));
+    commit(result.value, async () => repo.deleteLink(client(), await settled(id)));
     return { ok: true, value: undefined };
   }, []);
 
   const moveLink = useCallback((id: string, folderId: FolderId): Result<void> => {
     const result = moveLinkPure(getSnapshot(), id, folderId);
     if (!result.ok) return result;
-    commit(result.value, () => repo.moveLink(client(), id, folderId));
+    commit(result.value, async () =>
+      repo.moveLink(client(), await settled(id), await settled(folderId)),
+    );
     return { ok: true, value: undefined };
   }, []);
 
@@ -208,17 +275,22 @@ export function useVault(): VaultStoreState & VaultActions {
     const userId = current.user?.id;
     if (!userId) return { ok: false, error: "로그인이 필요합니다." };
     const sortOrder = current.folders.filter((f) => !f.isSystem).length;
-    commit(result.value.state, () =>
-      repo.insertFolder(client(), userId, result.value.folder, sortOrder),
+    const folder = result.value.folder;
+    commitInsert(
+      result.value.state,
+      folder.id,
+      () => repo.insertFolder(client(), userId, folder, sortOrder),
+      replaceFolderId(folder.id),
     );
-    return { ok: true, value: result.value.folder };
+    // 화면은 임시 id 를 받는다. 서버 id 로 바뀐 뒤에는 aliases 로 같은 폴더를 찾을 수 있다.
+    return { ok: true, value: folder };
   }, []);
 
   const renameFolder = useCallback((id: FolderId, name: string): Result<void> => {
     const result = renameFolderPure(getSnapshot(), id, name);
     if (!result.ok) return result;
     const folder = result.value.folders.find((f) => f.id === id)!;
-    commit(result.value, () => repo.renameFolder(client(), id, folder.name));
+    commit(result.value, async () => repo.renameFolder(client(), await settled(id), folder.name));
     return { ok: true, value: undefined };
   }, []);
 
@@ -227,7 +299,9 @@ export function useVault(): VaultStoreState & VaultActions {
     const result = deleteFolderPure(current, id);
     if (!result.ok) return result;
     const uncategorizedId = uncategorizedIdOf(current.folders);
-    commit(result.value, () => repo.deleteFolder(client(), id, uncategorizedId));
+    commit(result.value, async () =>
+      repo.deleteFolder(client(), await settled(id), await settled(uncategorizedId)),
+    );
     return { ok: true, value: undefined };
   }, []);
 
@@ -242,6 +316,7 @@ export function useVault(): VaultStoreState & VaultActions {
     await client().auth.signOut();
     // 다음 로그인(다른 계정일 수 있음)을 위해 스토어를 비운다. localStorage 데이터는 건드리지 않는다.
     loadStarted = false;
+    pending.clear();
     setState({ ...initialState, status: "unauthenticated" });
   }, []);
 

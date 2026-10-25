@@ -51,6 +51,7 @@ export default function LinkVault({ appName }: LinkVaultProps) {
     user,
     error,
     imported,
+    aliases,
     folders,
     links,
     addLink,
@@ -73,10 +74,13 @@ export default function LinkVault({ appName }: LinkVaultProps) {
   const state = useMemo<VaultState>(() => ({ folders, links }), [folders, links]);
   const counts = useMemo(() => countByFolder(state), [state]);
 
+  // 방금 만든 폴더의 임시 id 가 서버 id 로 바뀌었으면 그 id 로 따라간다
+  const resolvedSelected =
+    selected === ALL_FILTER ? selected : (aliases[selected] ?? selected);
   // 선택한 폴더가 사라졌으면 '전체'로 되돌린다
   const effectiveSelected =
-    selected === ALL_FILTER || folders.some((f) => f.id === selected)
-      ? selected
+    resolvedSelected === ALL_FILTER || folders.some((f) => f.id === resolvedSelected)
+      ? resolvedSelected
       : ALL_FILTER;
   const selectedFolderName =
     effectiveSelected === ALL_FILTER

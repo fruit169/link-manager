@@ -369,9 +369,9 @@ export function normalizeState(raw: unknown, now = nowIso()): VaultState | null 
 /* ---------------------------- localStorage → DB 가져오기 ---------------------------- */
 
 export interface ImportPlan {
-  /** 새로 만들 폴더 (id는 새 uuid) */
+  /** 새로 만들 폴더 (id 는 임시값. DB 가 int8 id 를 새로 부여한다) */
   foldersToInsert: Folder[];
-  /** 폴더 ID가 DB 기준으로 바뀐 링크 (id는 새 uuid) */
+  /** 폴더 ID가 DB 기준으로 바뀐 링크 (id 는 임시값. DB 가 int8 id 를 새로 부여한다) */
   linksToInsert: Link[];
 }
 
