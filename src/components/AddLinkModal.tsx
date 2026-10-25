@@ -86,14 +86,15 @@ function AddLinkDialog({
     });
   };
 
-  const inputClass =
-    "w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100";
-  const labelClass = "mb-1 block text-sm font-medium text-gray-700";
-  const errorClass = "mt-1 text-xs text-red-600";
+  const inputClass = (hasError: boolean) =>
+    `input-field w-full px-4 py-3 text-[16px] ${hasError ? "input-field-error" : ""}`;
+  const labelClass =
+    "mb-1.5 block text-[var(--text-sub-size)] font-semibold text-[var(--text)]";
+  const errorClass = "mt-1.5 text-[var(--text-caption)] text-[var(--error)]";
 
   return (
     <div
-      className="fixed inset-0 z-20 flex items-end justify-center bg-gray-900/40 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-20 flex items-end justify-center bg-[var(--overlay)] p-0 sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
@@ -101,16 +102,19 @@ function AddLinkDialog({
         aria-modal="true"
         aria-labelledby="add-link-title"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl sm:p-6"
+        className="modal-panel w-full max-w-md rounded-t-[var(--radius-card)] p-5 sm:rounded-[var(--radius-card)] sm:p-6"
       >
-        <h2 id="add-link-title" className="text-lg font-bold text-gray-900">
+        <h2
+          id="add-link-title"
+          className="text-[var(--text-h2)] font-bold leading-[1.4] text-[var(--text)]"
+        >
           새 링크 추가
         </h2>
 
-        <form onSubmit={handleSubmit} noValidate className="mt-4 space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="mt-5 space-y-4">
           <div>
             <label htmlFor="link-url" className={labelClass}>
-              URL <span className="text-red-500">*</span>
+              URL <span className="text-[var(--error)]">*</span>
             </label>
             <input
               id="link-url"
@@ -119,7 +123,7 @@ function AddLinkDialog({
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://example.com"
-              className={inputClass}
+              className={inputClass(Boolean(errors.url))}
               aria-invalid={Boolean(errors.url)}
             />
             {errors.url && <p className={errorClass}>{errors.url}</p>}
@@ -127,7 +131,7 @@ function AddLinkDialog({
 
           <div>
             <label htmlFor="link-title" className={labelClass}>
-              제목 <span className="text-red-500">*</span>
+              제목 <span className="text-[var(--error)]">*</span>
             </label>
             <input
               id="link-title"
@@ -135,7 +139,7 @@ function AddLinkDialog({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="링크 제목"
-              className={inputClass}
+              className={inputClass(Boolean(errors.title))}
               aria-invalid={Boolean(errors.title)}
             />
             {errors.title && <p className={errorClass}>{errors.title}</p>}
@@ -151,7 +155,7 @@ function AddLinkDialog({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="이 링크가 무엇인지 간단히 적어 주세요"
               rows={2}
-              className={`${inputClass} resize-none`}
+              className={`${inputClass(false)} resize-none`}
             />
           </div>
 
@@ -163,7 +167,7 @@ function AddLinkDialog({
               id="link-folder"
               value={folderId}
               onChange={(e) => setFolderId(e.target.value as FolderId)}
-              className={`${inputClass} bg-white`}
+              className={inputClass(false)}
             >
               {folders.map((folder) => (
                 <option key={folder.id} value={folder.id}>
@@ -183,7 +187,7 @@ function AddLinkDialog({
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
               placeholder="비워 두면 대체 화면이 표시됩니다"
-              className={inputClass}
+              className={inputClass(Boolean(errors.imageUrl))}
               aria-invalid={Boolean(errors.imageUrl)}
             />
             {errors.imageUrl && <p className={errorClass}>{errors.imageUrl}</p>}
@@ -193,14 +197,11 @@ function AddLinkDialog({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              className="btn-secondary px-5 py-2.5 text-[15px]"
             >
               취소
             </button>
-            <button
-              type="submit"
-              className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-600"
-            >
+            <button type="submit" className="btn-primary px-5 py-2.5 text-[15px]">
               추가
             </button>
           </div>

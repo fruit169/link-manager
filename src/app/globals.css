@@ -1,15 +1,183 @@
 @import "tailwindcss";
 
-@theme inline {
-  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+/*
+ * 디자인 테마: 토스(Toss) 스타일 (라이트모드 전용)
+ * 출처: 디자인/toss.md
+ * 모든 공통 스타일 값은 여기 CSS 변수로 관리하고,
+ * 컴포넌트에서는 Tailwind arbitrary value(bg-[var(--accent)])로만 참조한다.
+ */
+:root {
+  /* 색상 */
+  --bg: #f4f4f4;
+  --card-bg: #ffffff;
+  --text: #191f28;
+  --text-sub: #6b7684; /* 가이드 #8B95A1는 밝은 배경에서 명암비 3:1 미달이라 어둡게 조정 */
+  --placeholder: #b0b8c1;
+  --accent: #3182f6;
+  --accent-hover: #1b64da;
+  --accent-soft: #e8f3ff;
+  --disabled: #dcdee3;
+  --error: #f04452;
+  --success: #30b06e;
+  --overlay: rgba(25, 31, 40, 0.45);
+
+  /* 그림자 (보더 대신 사용) */
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-nav: 0 1px 0 rgba(0, 0, 0, 0.06);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.16);
+
+  /* 모서리 */
+  --radius-card: 16px;
+  --radius-button: 12px;
+  --radius-input: 12px;
+  --radius-badge: 8px;
+
+  /* 여백 */
+  --space-page-x: 20px;
+  --space-section: 24px;
+  --space-element: 12px;
+  --nav-height: 56px;
+
+  /* 타이포그래피 */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+    "Pretendard Variable", Pretendard, "Noto Sans KR", "Malgun Gothic",
+    "Segoe UI", sans-serif;
+  --text-h1: 26px;
+  --text-h2: 20px;
+  --text-body: 17px;
+  --text-sub-size: 14px;
+  --text-caption: 13px;
+
+  /* 모션 */
+  --transition: 0.2s ease;
 }
 
 body {
+  background: var(--bg);
+  color: var(--text);
   font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.6;
 }
 
-/* 모바일 폴더 칩처럼 가로 스크롤은 되지만 스크롤바는 숨긴다 */
+/* ---------- 공통 컴포넌트 클래스 (hover/focus는 반드시 여기서 정의) ---------- */
+
+/* 상단 네비게이션 */
+.nav-bar {
+  background: var(--card-bg);
+  box-shadow: var(--shadow-nav);
+}
+
+/* 기본 버튼: 액센트 배경 + 흰색 텍스트 */
+.btn-primary {
+  background: var(--accent);
+  color: #ffffff;
+  border-radius: var(--radius-button);
+  font-weight: 700;
+  transition:
+    background-color var(--transition),
+    transform var(--transition);
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* 보조 버튼: 연한 액센트 배경 + 액센트 텍스트 */
+.btn-secondary {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: var(--radius-button);
+  font-weight: 700;
+  transition:
+    background-color var(--transition),
+    transform var(--transition);
+}
+.btn-secondary:hover {
+  background: #d6e9ff;
+}
+.btn-secondary:active {
+  transform: scale(0.98);
+}
+
+/* 폴더 메뉴 항목 */
+.nav-item {
+  color: var(--text);
+  border-radius: var(--radius-button);
+  transition:
+    background-color var(--transition),
+    color var(--transition);
+}
+.nav-item:hover {
+  background: var(--card-bg);
+}
+.nav-item-active,
+.nav-item-active:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* 카드: 보더 없이 그림자로 구분 */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition:
+    box-shadow var(--transition),
+    transform var(--transition);
+}
+.card-hover:hover {
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+.card-hover:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 뱃지/태그 */
+.badge {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: var(--radius-badge);
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+
+/* 입력 필드 / 셀렉트: 보더 없이 배경색, 포커스 시 흰 배경 + 액센트 링 */
+.input-field {
+  background: var(--bg);
+  color: var(--text);
+  border: none;
+  border-radius: var(--radius-input);
+  transition:
+    background-color var(--transition),
+    box-shadow var(--transition);
+}
+.input-field::placeholder {
+  color: var(--placeholder);
+}
+.input-field:focus {
+  outline: none;
+  background: var(--card-bg);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.input-field-error,
+.input-field-error:focus {
+  box-shadow: 0 0 0 2px var(--error);
+}
+
+/* 모달 */
+.modal-panel {
+  background: var(--card-bg);
+  box-shadow: var(--shadow-modal);
+}
+
+/* 가로 스크롤은 되지만 스크롤바는 숨긴다 (모바일 폴더 칩) */
 @utility scrollbar-none {
   scrollbar-width: none;
   &::-webkit-scrollbar {

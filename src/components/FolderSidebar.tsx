@@ -19,9 +19,9 @@ export default function FolderSidebar({
   ];
 
   return (
-    <nav aria-label="폴더" className="md:w-48 md:shrink-0">
+    <nav aria-label="폴더" className="md:w-52 md:shrink-0">
       {/* 모바일: 가로 스크롤 칩 / 데스크톱: 세로 메뉴 */}
-      <ul className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-col md:gap-1 md:overflow-visible md:px-0 md:pb-0">
+      <ul className="scrollbar-none -mx-[var(--space-page-x)] flex gap-2 overflow-x-auto px-[var(--space-page-x)] md:mx-0 md:flex-col md:gap-1 md:overflow-visible md:px-0">
         {items.map((item) => {
           const active = item.id === selected;
           return (
@@ -30,15 +30,15 @@ export default function FolderSidebar({
                 type="button"
                 onClick={() => onSelect(item.id)}
                 aria-current={active ? "page" : undefined}
-                className={`flex w-full items-center justify-between gap-3 whitespace-nowrap rounded-md px-3 py-2 text-sm transition ${
-                  active
-                    ? "bg-blue-500 font-semibold text-white"
-                    : "text-gray-700 hover:bg-gray-100"
+                className={`nav-item flex w-full items-center justify-between gap-3 whitespace-nowrap px-4 py-2.5 text-[15px] ${
+                  active ? "nav-item-active" : ""
                 }`}
               >
                 <span>{item.name}</span>
                 <span
-                  className={`text-xs ${active ? "text-blue-100" : "text-gray-400"}`}
+                  className={`text-[var(--text-caption)] ${
+                    active ? "text-[var(--accent)]" : "text-[var(--text-sub)]"
+                  }`}
                 >
                   {counts[item.id]}
                 </span>

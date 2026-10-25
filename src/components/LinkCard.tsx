@@ -17,7 +17,10 @@ function hostnameOf(url: string): string {
   }
 }
 
-/** next.config.ts의 images.remotePatterns에 등록된 호스트만 이미지 최적화를 거친다. */
+/**
+ * next.config.ts의 images.remotePatterns에 등록된 호스트만 이미지 최적화를 거친다.
+ * 프로젝트 내부 파일(/thumbs/...)과 그 외 외부 주소는 원본 그대로 표시한다.
+ */
 const OPTIMIZED_IMAGE_HOSTS = ["picsum.photos"];
 
 function isOptimizedHost(url: string): boolean {
@@ -31,11 +34,13 @@ function isOptimizedHost(url: string): boolean {
 function ImageFallback({ title, url }: { title: string; url: string }) {
   const initial = title.trim().charAt(0).toUpperCase() || "?";
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-blue-50 to-blue-100">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 text-2xl font-bold text-white">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[var(--accent-soft)]">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent)] text-2xl font-bold text-white">
         {initial}
       </div>
-      <span className="text-xs text-blue-700">{hostnameOf(url)}</span>
+      <span className="text-[var(--text-caption)] text-[var(--accent)]">
+        {hostnameOf(url)}
+      </span>
     </div>
   );
 }
@@ -50,9 +55,9 @@ export default function LinkCard({ link, folderName }: LinkCardProps) {
       href={link.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
+      className="card card-hover group flex flex-col overflow-hidden"
     >
-      <div className="relative aspect-[2/1] w-full bg-gray-100">
+      <div className="relative aspect-[2/1] w-full bg-[var(--bg)]">
         {showImage ? (
           <Image
             src={imageUrl}
@@ -68,17 +73,15 @@ export default function LinkCard({ link, folderName }: LinkCardProps) {
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <span className="w-fit rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs text-gray-600">
-          {folderName}
-        </span>
-        <h2 className="line-clamp-1 font-semibold text-gray-900 group-hover:text-blue-600">
+      <div className="flex flex-1 flex-col gap-[var(--space-element)] p-5">
+        <span className="badge w-fit px-2.5 py-1 leading-none">{folderName}</span>
+        <h2 className="line-clamp-1 text-[var(--text-body)] font-bold leading-[1.4] text-[var(--text)]">
           {link.title}
         </h2>
-        <p className="line-clamp-2 text-sm leading-relaxed text-gray-500">
+        <p className="line-clamp-2 text-[var(--text-sub-size)] leading-[1.5] text-[var(--text-sub)]">
           {link.description}
         </p>
-        <span className="mt-auto truncate pt-1 text-sm text-blue-500">
+        <span className="mt-auto truncate pt-1 text-[var(--text-sub-size)] text-[var(--accent)]">
           {link.url}
         </span>
       </div>

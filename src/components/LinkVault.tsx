@@ -48,9 +48,9 @@ export default function LinkVault({
   const defaultFolderId = selected === "all" ? folders[0].id : selected;
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
+    <div className="flex min-h-screen flex-col bg-[var(--bg)]">
       <Header appName={appName} onNewLink={() => setIsAddOpen(true)} />
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-4 sm:px-6 md:flex-row md:gap-6 md:py-6">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-[var(--space-page-x)] py-4 md:flex-row md:gap-[var(--space-section)] md:py-[var(--space-section)]">
         <FolderSidebar
           folders={folders}
           selected={selected}

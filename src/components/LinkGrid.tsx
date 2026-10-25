@@ -12,7 +12,7 @@ export default function LinkGrid({ links, folders }: LinkGridProps) {
 
   if (links.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-gray-300 bg-white py-20 text-sm text-gray-500">
+      <div className="card flex flex-1 items-center justify-center py-20 text-[var(--text-sub-size)] text-[var(--text-sub)]">
         이 폴더에는 아직 링크가 없습니다.
       </div>
     );
