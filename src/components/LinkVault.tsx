@@ -1,26 +1,32 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
+import AddLinkDialog from "@/components/AddLinkDialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import EditLinkDialog from "@/components/EditLinkDialog";
 import FolderNameDialog from "@/components/FolderNameDialog";
 import FolderSidebar from "@/components/FolderSidebar";
 import Header from "@/components/Header";
-import AddLinkDialog from "@/components/AddLinkDialog";
-import EditLinkDialog from "@/components/EditLinkDialog";
 import LinkGrid from "@/components/LinkGrid";
 import MoveLinkDialog from "@/components/MoveLinkDialog";
 import SearchBar from "@/components/SearchBar";
 import {
   ALL_FILTER,
   ALL_FILTER_NAME,
-  UNCATEGORIZED_FOLDER_ID,
   UNCATEGORIZED_FOLDER_NAME,
   type FolderFilter,
   type FolderId,
   type Link,
   type LinkInput,
 } from "@/lib/types";
-import { countByFolder, linksInFilter, searchLinks, type VaultState } from "@/lib/vault";
+import {
+  countByFolder,
+  linksInFilter,
+  searchLinks,
+  uncategorizedIdOf,
+  type VaultState,
+} from "@/lib/vault";
 import { useVault } from "@/lib/vault-store";
 
 interface LinkVaultProps {
@@ -38,8 +44,13 @@ type DialogState =
   | { kind: "delete-folder"; id: FolderId };
 
 export default function LinkVault({ appName }: LinkVaultProps) {
+  const router = useRouter();
   const vault = useVault();
   const {
+    status,
+    user,
+    error,
+    imported,
     folders,
     links,
     addLink,
@@ -49,6 +60,9 @@ export default function LinkVault({ appName }: LinkVaultProps) {
     addFolder,
     renameFolder,
     deleteFolder,
+    dismissError,
+    reload,
+    signOut,
   } = vault;
 
   const [selected, setSelected] = useState<FolderFilter>(ALL_FILTER);
@@ -59,7 +73,7 @@ export default function LinkVault({ appName }: LinkVaultProps) {
   const state = useMemo<VaultState>(() => ({ folders, links }), [folders, links]);
   const counts = useMemo(() => countByFolder(state), [state]);
 
-  // 선택한 폴더가 (다른 탭 등에서) 사라졌으면 '전체'로 되돌린다
+  // 선택한 폴더가 사라졌으면 '전체'로 되돌린다
   const effectiveSelected =
     selected === ALL_FILTER || folders.some((f) => f.id === selected)
       ? selected
@@ -77,7 +91,6 @@ export default function LinkVault({ appName }: LinkVaultProps) {
 
   const handleAddLink = (input: LinkInput) => {
     addLink(input);
-    // 현재 필터에 가려지는 폴더면 새 링크가 보이도록 전환
     if (effectiveSelected !== ALL_FILTER && effectiveSelected !== input.folderId) {
       setSelected(input.folderId);
     }
@@ -122,11 +135,54 @@ export default function LinkVault({ appName }: LinkVaultProps) {
     closeDialog();
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace("/login");
+    router.refresh();
+  };
+
+  /* -------------------------------- 상태 화면 -------------------------------- */
+
+  if (status === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] text-[var(--text-sub)]">
+        불러오는 중…
+      </div>
+    );
+  }
+  if (status === "unauthenticated") {
+    // 프록시가 /login 으로 보내지만, 세션이 중간에 끊긴 경우를 대비한다
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[var(--bg)] px-6 text-center">
+        <p className="text-[var(--text-body)] font-bold text-[var(--text)]">로그인이 필요합니다</p>
+        <a href="/login" className="btn-primary px-5 py-2.5 text-[15px]">
+          로그인 화면으로
+        </a>
+      </div>
+    );
+  }
+  if (status === "error") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[var(--bg)] px-6 text-center">
+        <p className="text-[var(--text-body)] font-bold text-[var(--text)]">데이터를 불러오지 못했습니다</p>
+        <p className="text-[var(--text-sub-size)] text-[var(--text-sub)]">{error}</p>
+        <div className="flex gap-2">
+          <button type="button" onClick={reload} className="btn-primary px-5 py-2.5 text-[15px]">
+            다시 시도
+          </button>
+          <button type="button" onClick={handleSignOut} className="btn-secondary px-5 py-2.5 text-[15px]">
+            로그아웃
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   /* -------------------------------- 다이얼로그 -------------------------------- */
 
-  // 새 링크의 기본 폴더: 보고 있는 폴더, '전체'면 '미분류'
+  const uncategorizedId = uncategorizedIdOf(folders);
   const defaultFolderId =
-    effectiveSelected === ALL_FILTER ? UNCATEGORIZED_FOLDER_ID : effectiveSelected;
+    effectiveSelected === ALL_FILTER ? uncategorizedId : effectiveSelected;
 
   const dialogLink: Link | undefined =
     dialog.kind === "edit-link" || dialog.kind === "move-link" || dialog.kind === "delete-link"
@@ -141,8 +197,10 @@ export default function LinkVault({ appName }: LinkVaultProps) {
     <div className="flex min-h-screen flex-col bg-[var(--bg)]">
       <Header
         appName={appName}
+        userEmail={user?.email ?? null}
         onNewFolder={() => setDialog({ kind: "add-folder" })}
         onNewLink={() => setDialog({ kind: "add-link" })}
+        onSignOut={handleSignOut}
       />
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-[var(--space-page-x)] py-4 md:flex-row md:gap-[var(--space-section)] md:py-[var(--space-section)]">
         <FolderSidebar
@@ -154,6 +212,24 @@ export default function LinkVault({ appName }: LinkVaultProps) {
           onDeleteFolder={(id) => setDialog({ kind: "delete-folder", id })}
         />
         <section className="flex min-w-0 flex-1 flex-col gap-4" aria-label="링크 목록">
+          {error && (
+            <div role="alert" className="notice notice-error flex items-start justify-between gap-3 px-4 py-3 text-[var(--text-sub-size)] leading-[1.5]">
+              <span>{error}</span>
+              <button type="button" onClick={dismissError} aria-label="알림 닫기" className="shrink-0 font-bold">
+                ×
+              </button>
+            </div>
+          )}
+          {imported && !error && (
+            <div role="status" className="notice notice-info flex items-start justify-between gap-3 px-4 py-3 text-[var(--text-sub-size)] leading-[1.5]">
+              <span>
+                이 브라우저에 저장되어 있던 폴더 {imported.folders}개와 링크 {imported.links}개를 계정으로 가져왔습니다.
+              </span>
+              <button type="button" onClick={dismissError} aria-label="알림 닫기" className="shrink-0 font-bold">
+                ×
+              </button>
+            </div>
+          )}
           <SearchBar
             value={query}
             onChange={setQuery}

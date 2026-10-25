@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  isSystemFolder,
+  planImport,
+  uncategorizedIdOf,
   addFolder,
   addLink,
   countByFolder,
@@ -268,5 +271,81 @@ describe("normalizeState (저장 데이터 복구)", () => {
       links: [],
     });
     expect(state?.folders[0].name).toBe("미분류");
+    expect(state?.folders[0].isSystem).toBe(true);
+  });
+});
+
+describe("시스템 폴더 (DB uuid)", () => {
+  const dbFolders = [
+    { id: "f-ai", name: "AI" },
+    { id: "f-uncat", name: "미분류", isSystem: true },
+  ];
+
+  it("isSystem 표시가 있는 폴더를 시스템 폴더로 본다", () => {
+    expect(isSystemFolder(dbFolders, "f-uncat")).toBe(true);
+    expect(isSystemFolder(dbFolders, "f-ai")).toBe(false);
+    expect(uncategorizedIdOf(dbFolders)).toBe("f-uncat");
+  });
+
+  it("폴더 삭제 시 링크는 DB '미분류' uuid 로 옮겨진다", () => {
+    const state: VaultState = {
+      folders: dbFolders,
+      links: [{ id: "l1", folderId: "f-ai", title: "A", description: "", url: "https://a.com", createdAt: T0, updatedAt: T0 }],
+    };
+    const result = deleteFolder(state, "f-ai");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.links[0].folderId).toBe("f-uncat");
+    expect(deleteFolder(state, "f-uncat")).toMatchObject({ ok: false });
+  });
+});
+
+describe("planImport (localStorage → DB)", () => {
+  const local: VaultState = {
+    folders: [
+      { id: "ai", name: "AI 도구" },
+      { id: "dev", name: "개발" },
+      uncategorizedFolder,
+    ],
+    links: [
+      { id: "1", folderId: "ai", title: "ChatGPT", description: "", url: "https://chatgpt.com", createdAt: T0, updatedAt: T0 },
+      { id: "2", folderId: "dev", title: "Next", description: "", url: "https://nextjs.org", createdAt: T0, updatedAt: T0 },
+      { id: "3", folderId: UNCATEGORIZED_FOLDER_ID, title: "Etc", description: "", url: "https://etc.com", createdAt: T0, updatedAt: T0 },
+      { id: "4", folderId: "ghost", title: "Ghost", description: "", url: "https://ghost.com", createdAt: T0, updatedAt: T0 },
+    ],
+  };
+  const remote: VaultState = {
+    folders: [
+      { id: "r-ai", name: "AI 도구" },
+      { id: "r-uncat", name: "미분류", isSystem: true },
+    ],
+    links: [{ id: "r1", folderId: "r-ai", title: "ChatGPT", description: "", url: "https://chatgpt.com/", createdAt: T1, updatedAt: T1 }],
+  };
+
+  it("같은 이름 폴더는 재사용하고 없는 폴더만 새로 만든다", () => {
+    const plan = planImport(local, remote);
+    expect(plan.foldersToInsert.map((f) => f.name)).toEqual(["개발"]);
+    expect(plan.foldersToInsert[0].id).not.toBe("dev");
+  });
+
+  it("링크는 새 폴더 ID로 바뀌고, 로컬 '미분류'·없는 폴더는 DB '미분류'로 간다", () => {
+    const plan = planImport(local, remote);
+    const byTitle = Object.fromEntries(plan.linksToInsert.map((l) => [l.title, l.folderId]));
+    expect(byTitle["Next"]).toBe(plan.foldersToInsert[0].id);
+    expect(byTitle["Etc"]).toBe("r-uncat");
+    expect(byTitle["Ghost"]).toBe("r-uncat");
+    expect(plan.linksToInsert.every((l) => !["1", "2", "3", "4"].includes(l.id))).toBe(true);
+  });
+
+  it("DB에 같은 URL이 이미 있으면 건너뛴다", () => {
+    const plan = planImport(local, remote);
+    expect(plan.linksToInsert.map((l) => l.title)).toEqual(["Next", "Etc", "Ghost"]);
+  });
+
+  it("DB가 비어 있어도 로컬 '미분류'는 새 폴더로 만들지 않는다", () => {
+    const empty: VaultState = { folders: [{ id: "r-uncat", name: "미분류", isSystem: true }], links: [] };
+    const plan = planImport(local, empty);
+    expect(plan.foldersToInsert.map((f) => f.name)).toEqual(["AI 도구", "개발"]);
+    expect(plan.linksToInsert).toHaveLength(4);
   });
 });

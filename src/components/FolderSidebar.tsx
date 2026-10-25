@@ -29,7 +29,7 @@ export default function FolderSidebar({
 }: FolderSidebarProps) {
   const items: { id: FolderFilter; name: string; editable: boolean }[] = [
     { id: ALL_FILTER, name: ALL_FILTER_NAME, editable: false },
-    ...folders.map((f) => ({ id: f.id, name: f.name, editable: !isSystemFolder(f.id) })),
+    ...folders.map((f) => ({ id: f.id, name: f.name, editable: !isSystemFolder(folders, f.id) })),
   ];
 
   return (

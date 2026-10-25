@@ -4,8 +4,8 @@ import { useRef, useState, type FormEvent } from "react";
 import Dialog from "@/components/Dialog";
 import { fetchOpenGraph } from "@/lib/og-client";
 import type { OpenGraphData } from "@/lib/og/types";
-import { UNCATEGORIZED_FOLDER_ID, type Folder, type FolderId, type Link, type LinkInput } from "@/lib/types";
-import { findDuplicateUrl } from "@/lib/vault";
+import type { Folder, FolderId, Link, LinkInput } from "@/lib/types";
+import { findDuplicateUrl, uncategorizedIdOf } from "@/lib/vault";
 
 interface AddLinkDialogProps {
   folders: Folder[];
@@ -94,7 +94,7 @@ export default function AddLinkDialog({
   }) => {
     onSave({
       url: url.trim(),
-      folderId: folders.some((f) => f.id === folderId) ? folderId : UNCATEGORIZED_FOLDER_ID,
+      folderId: folders.some((f) => f.id === folderId) ? folderId : uncategorizedIdOf(folders),
       title: merged.title.trim(),
       description: merged.description.trim(),
       imageUrl: merged.imageUrl.trim() || undefined,

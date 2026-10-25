@@ -1,10 +1,12 @@
 interface HeaderProps {
   appName: string;
+  userEmail: string | null;
   onNewFolder: () => void;
   onNewLink: () => void;
+  onSignOut: () => void;
 }
 
-export default function Header({ appName, onNewFolder, onNewLink }: HeaderProps) {
+export default function Header({ appName, userEmail, onNewFolder, onNewLink, onSignOut }: HeaderProps) {
   return (
     <header className="nav-bar sticky top-0 z-10">
       <div className="mx-auto flex h-[var(--nav-height)] max-w-7xl items-center justify-between gap-3 px-[var(--space-page-x)]">
@@ -26,6 +28,23 @@ export default function Header({ appName, onNewFolder, onNewLink }: HeaderProps)
           >
             + 새 링크
           </button>
+          {userEmail !== null && (
+            <div className="ml-1 flex items-center gap-2 border-l border-[var(--disabled)] pl-3">
+              <span
+                className="hidden max-w-[12rem] truncate text-[var(--text-caption)] text-[var(--text-sub)] md:inline"
+                title={userEmail}
+              >
+                {userEmail}
+              </span>
+              <button
+                type="button"
+                onClick={onSignOut}
+                className="link-inline text-[14px] font-semibold text-[var(--text-sub)]"
+              >
+                로그아웃
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

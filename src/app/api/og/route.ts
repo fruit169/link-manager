@@ -1,7 +1,9 @@
 import { promises as dns } from "node:dns";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { collectOpenGraph } from "@/lib/og/collect";
 import type { OgResponse } from "@/lib/og/types";
+import { createClient } from "@/utils/supabase/server";
 
 /**
  * POST /api/og
@@ -26,6 +28,13 @@ function json(body: OgResponse, status: number) {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
+  // 로그인한 사용자만 외부 페이지 조회를 요청할 수 있다 (남용 방지)
+  const supabase = createClient(await cookies());
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) {
+    return json({ ok: false, error: { code: "bad_request", message: "로그인이 필요합니다." } }, 401);
+  }
+
   let url: unknown;
   try {
     const text = await request.text();

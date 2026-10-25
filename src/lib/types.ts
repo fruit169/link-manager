@@ -1,4 +1,4 @@
-/** 폴더 고유 ID. 사용자가 만든 폴더는 무작위 ID, 시스템 폴더는 고정 ID를 쓴다. */
+/** 폴더 고유 ID. DB에서는 uuid, 가져오기 전 localStorage 데이터에서는 임의 문자열이다. */
 export type FolderId = string;
 
 /** 사이드바 필터. "all"은 가상 항목(전체)이고 나머지는 폴더 ID다. */
@@ -6,7 +6,7 @@ export type FolderFilter = "all" | FolderId;
 
 export const ALL_FILTER = "all" as const;
 
-/** 폴더 삭제 시 링크가 옮겨지는 시스템 폴더. 이름 변경·삭제 불가. */
+/** localStorage 시절 '미분류' 폴더의 고정 ID. DB에서는 사용자별 uuid를 쓴다. */
 export const UNCATEGORIZED_FOLDER_ID = "uncategorized";
 export const UNCATEGORIZED_FOLDER_NAME = "미분류";
 
@@ -16,6 +16,8 @@ export const ALL_FILTER_NAME = "전체";
 export interface Folder {
   id: FolderId;
   name: string;
+  /** '미분류'처럼 이름 변경·삭제가 안 되는 시스템 폴더 */
+  isSystem?: boolean;
 }
 
 export interface Link {
@@ -39,3 +41,9 @@ export interface Link {
 
 /** 링크 추가·수정 시 입력하는 값. id와 날짜는 스토어가 채운다. */
 export type LinkInput = Omit<Link, "id" | "createdAt" | "updatedAt">;
+
+/** 로그인한 사용자 */
+export interface AppUser {
+  id: string;
+  email: string;
+}

@@ -283,6 +283,13 @@ body {
   color: #8a5a00;
 }
 
+/* 로그인/회원가입 탭 */
+.tab-active {
+  background: var(--card-bg);
+  color: var(--text);
+  box-shadow: var(--shadow-card);
+}
+
 /* 검색 입력의 브라우저 기본 지우기 버튼은 숨긴다 (직접 만든 × 버튼을 쓴다) */
 .search-input::-webkit-search-cancel-button {
   display: none;
