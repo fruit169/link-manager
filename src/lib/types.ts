@@ -23,7 +23,19 @@ export interface Link {
   folderId: FolderId;
   title: string;
   description: string;
+  /** 사용자가 입력한 링크 주소 */
   url: string;
-  /** 미리보기 이미지. 없으면 카드에 대체 화면을 보여준다. */
+  /** 썸네일 이미지 주소. 없으면 카드에 대체 화면을 보여준다. */
   imageUrl?: string;
+  /** 페이지가 선언한 og:url (있을 때만) */
+  ogUrl?: string;
+  /** 리다이렉트를 따라간 최종 응답 주소 (입력 URL과 다를 때만) */
+  finalUrl?: string;
+  /** ISO 8601 */
+  createdAt: string;
+  /** ISO 8601 */
+  updatedAt: string;
 }
+
+/** 링크 추가·수정 시 입력하는 값. id와 날짜는 스토어가 채운다. */
+export type LinkInput = Omit<Link, "id" | "createdAt" | "updatedAt">;

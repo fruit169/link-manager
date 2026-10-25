@@ -10,6 +10,9 @@ export const folders: Folder[] = [
   uncategorizedFolder,
 ];
 
+/** 샘플 데이터의 생성·수정 시각. 고정값이어야 서버와 클라이언트 렌더링이 같다. */
+const SEED_TIME = "2026-10-25T00:00:00.000Z";
+
 export const sampleLinks: Link[] = [
   {
     id: "1",
@@ -19,6 +22,8 @@ export const sampleLinks: Link[] = [
       "OpenAI의 대화형 AI. 글쓰기, 요약, 아이디어 정리에 활용하는 기본 도구.",
     url: "https://chatgpt.com",
     imageUrl: "/thumbs/chatgpt.svg",
+    createdAt: SEED_TIME,
+    updatedAt: SEED_TIME,
   },
   {
     id: "2",
@@ -27,6 +32,8 @@ export const sampleLinks: Link[] = [
     description:
       "Anthropic의 AI 어시스턴트. 긴 문서 분석과 코드 작성에 강점이 있다.",
     url: "https://claude.ai",
+    createdAt: SEED_TIME,
+    updatedAt: SEED_TIME,
   },
   {
     id: "3",
@@ -36,6 +43,8 @@ export const sampleLinks: Link[] = [
       "프로그래밍, 인공지능, 데이터, 마케팅, 디자인 등 입문부터 실전까지 업계 최고 선배들에게 배우는 온라인 강의.",
     url: "https://www.inflearn.com",
     imageUrl: "/thumbs/inflearn.svg",
+    createdAt: SEED_TIME,
+    updatedAt: SEED_TIME,
   },
   {
     id: "4",
@@ -45,6 +54,8 @@ export const sampleLinks: Link[] = [
       "템플릿 기반 온라인 디자인 도구. 발표 자료, 카드뉴스, 포스터를 빠르게 만든다.",
     url: "https://www.canva.com",
     imageUrl: "/thumbs/canva.svg",
+    createdAt: SEED_TIME,
+    updatedAt: SEED_TIME,
   },
   {
     id: "5",
@@ -53,6 +64,8 @@ export const sampleLinks: Link[] = [
     description:
       "App Router, 서버 컴포넌트, 데이터 패칭 등 Next.js의 모든 기능을 다루는 공식 문서.",
     url: "https://nextjs.org/docs",
+    createdAt: SEED_TIME,
+    updatedAt: SEED_TIME,
   },
   {
     id: "6",
@@ -61,6 +74,8 @@ export const sampleLinks: Link[] = [
     description: "네이버 메인에서 다양한 정보와 유용한 컨텐츠를 만나 보세요.",
     url: "https://naver.com",
     imageUrl: "/thumbs/naver.svg",
+    createdAt: SEED_TIME,
+    updatedAt: SEED_TIME,
   },
 ];
 

@@ -1,6 +1,6 @@
 "use client";
 
-import FolderMenu from "@/components/FolderMenu";
+import ActionMenu from "@/components/ActionMenu";
 import { isSystemFolder } from "@/lib/vault";
 import {
   ALL_FILTER,
@@ -41,7 +41,7 @@ export default function FolderSidebar({
           return (
             <li
               key={item.id}
-              className={`nav-item relative flex shrink-0 items-center pr-1.5 ${
+              className={`nav-item flex shrink-0 items-center pr-1.5 ${
                 active ? "nav-item-active" : ""
               }`}
             >
@@ -61,10 +61,12 @@ export default function FolderSidebar({
                 </span>
               </button>
               {item.editable ? (
-                <FolderMenu
-                  folderName={item.name}
-                  onRename={() => onRenameFolder(item.id)}
-                  onDelete={() => onDeleteFolder(item.id)}
+                <ActionMenu
+                  subject={`${item.name} 폴더`}
+                  items={[
+                    { label: "이름 변경", onSelect: () => onRenameFolder(item.id) },
+                    { label: "삭제", onSelect: () => onDeleteFolder(item.id), danger: true },
+                  ]}
                 />
               ) : (
                 <span className="h-7 w-2.5 shrink-0 md:w-7" aria-hidden="true" />

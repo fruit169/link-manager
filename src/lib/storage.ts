@@ -12,14 +12,27 @@ interface StoredShape {
   links: VaultState["links"];
 }
 
-export function loadVault(): VaultState | null {
-  if (typeof window === "undefined") return null;
+export interface LoadResult {
+  /** 정리된 상태. 저장 데이터가 없거나 읽을 수 없으면 null */
+  state: VaultState | null;
+  /** 키에 무언가 저장되어 있었는지. true인데 state가 null이면 깨진 데이터다. */
+  hadData: boolean;
+}
+
+export function loadVault(): LoadResult {
+  if (typeof window === "undefined") return { state: null, hadData: false };
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return normalizeState(JSON.parse(raw));
+    if (raw === null) return { state: null, hadData: false };
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return { state: null, hadData: true };
+    }
+    return { state: normalizeState(parsed), hadData: true };
   } catch {
-    return null;
+    return { state: null, hadData: false };
   }
 }
 

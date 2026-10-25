@@ -6,20 +6,40 @@ interface LinkGridProps {
   folders: Folder[];
   /** 지금 보고 있는 폴더 이름. '전체'면 null */
   folderName: string | null;
+  /** 검색어. 비어 있지 않으면 결과 없음 문구가 검색 기준으로 바뀐다 */
+  query: string;
+  onEditLink: (link: Link) => void;
+  onMoveLink: (link: Link) => void;
+  onDeleteLink: (link: Link) => void;
 }
 
-export default function LinkGrid({ links, folders, folderName }: LinkGridProps) {
+export default function LinkGrid({
+  links,
+  folders,
+  folderName,
+  query,
+  onEditLink,
+  onMoveLink,
+  onDeleteLink,
+}: LinkGridProps) {
   const nameOf = (id: Link["folderId"]) =>
     folders.find((f) => f.id === id)?.name ?? "미분류";
 
   if (links.length === 0) {
+    const searching = query.trim().length > 0;
     return (
       <div className="card flex flex-1 flex-col items-center justify-center gap-1 px-6 py-20 text-center">
         <p className="text-[var(--text-body)] font-bold text-[var(--text)]">
-          {folderName ? `'${folderName}' 폴더가 비어 있습니다` : "아직 링크가 없습니다"}
+          {searching
+            ? `'${query.trim()}'에 맞는 링크가 없습니다`
+            : folderName
+              ? `'${folderName}' 폴더가 비어 있습니다`
+              : "아직 링크가 없습니다"}
         </p>
         <p className="text-[var(--text-sub-size)] text-[var(--text-sub)]">
-          오른쪽 위 &apos;+ 새 링크&apos;로 첫 링크를 추가해 보세요.
+          {searching
+            ? "다른 검색어를 입력하거나 검색어를 지워 보세요."
+            : "오른쪽 위 '+ 새 링크'로 첫 링크를 추가해 보세요."}
         </p>
       </div>
     );
@@ -28,7 +48,14 @@ export default function LinkGrid({ links, folders, folderName }: LinkGridProps) 
   return (
     <div className="grid flex-1 content-start grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {links.map((link) => (
-        <LinkCard key={link.id} link={link} folderName={nameOf(link.folderId)} />
+        <LinkCard
+          key={link.id}
+          link={link}
+          folderName={nameOf(link.folderId)}
+          onEdit={() => onEditLink(link)}
+          onMove={() => onMoveLink(link)}
+          onDelete={() => onDeleteLink(link)}
+        />
       ))}
     </div>
   );

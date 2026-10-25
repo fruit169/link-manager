@@ -222,6 +222,72 @@ body {
   box-shadow: 0 0 0 2px var(--error);
 }
 
+/* 카드 수정 버튼(연필): 평소엔 숨기고 카드에 마우스를 올리거나 키보드 포커스가 들어오면 보인다 */
+.card-edit-btn {
+  background: var(--card-bg);
+  color: var(--text);
+  box-shadow: var(--shadow-card);
+  opacity: 0;
+  transition:
+    opacity var(--transition),
+    background-color var(--transition),
+    color var(--transition),
+    transform var(--transition);
+}
+.card:hover .card-edit-btn,
+.card:focus-within .card-edit-btn,
+.card-edit-btn:focus-visible {
+  opacity: 1;
+}
+.card-edit-btn:hover {
+  background: var(--accent);
+  color: #ffffff;
+}
+.card-edit-btn:active {
+  transform: scale(0.95);
+}
+/* 터치 기기에는 호버가 없으므로 항상 보여 준다 */
+@media (hover: none) {
+  .card-edit-btn {
+    opacity: 1;
+  }
+}
+
+/* 카드 안의 링크: 제목은 호버 시 액센트, URL은 호버 시 밑줄 */
+.link-title {
+  color: inherit;
+  transition: color var(--transition);
+}
+.link-title:hover {
+  color: var(--accent);
+}
+.link-url:hover,
+.link-inline:hover {
+  text-decoration: underline;
+}
+
+/* 안내 상자 (조회 중 / 오류 / 중복 확인) */
+.notice {
+  border-radius: var(--radius-button);
+}
+.notice-info {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.notice-error {
+  background: #fdecee;
+  color: #c2303c;
+}
+.notice-warn {
+  background: #fff4e0;
+  color: #8a5a00;
+}
+
+/* 검색 입력의 브라우저 기본 지우기 버튼은 숨긴다 (직접 만든 × 버튼을 쓴다) */
+.search-input::-webkit-search-cancel-button {
+  display: none;
+}
+
 /* 모달 */
 .modal-panel {
   background: var(--card-bg);

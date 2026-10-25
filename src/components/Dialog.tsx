@@ -31,7 +31,7 @@ export default function Dialog({ titleId, onClose, children }: DialogProps) {
         aria-modal="true"
         aria-labelledby={titleId}
         onClick={(e) => e.stopPropagation()}
-        className="modal-panel w-full max-w-md rounded-t-[var(--radius-card)] p-5 sm:rounded-[var(--radius-card)] sm:p-6"
+        className="modal-panel max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-[var(--radius-card)] p-5 sm:max-h-[90vh] sm:rounded-[var(--radius-card)] sm:p-6"
       >
         {children}
       </div>
