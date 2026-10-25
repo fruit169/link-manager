@@ -1,9 +1,10 @@
 interface HeaderProps {
   appName: string;
+  onNewFolder: () => void;
   onNewLink: () => void;
 }
 
-export default function Header({ appName, onNewLink }: HeaderProps) {
+export default function Header({ appName, onNewFolder, onNewLink }: HeaderProps) {
   return (
     <header className="nav-bar sticky top-0 z-10">
       <div className="mx-auto flex h-[var(--nav-height)] max-w-7xl items-center justify-between gap-3 px-[var(--space-page-x)]">
@@ -13,6 +14,7 @@ export default function Header({ appName, onNewLink }: HeaderProps) {
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
+            onClick={onNewFolder}
             className="btn-secondary px-3 py-2 text-[14px] sm:px-4 sm:text-[15px]"
           >
             + 새 폴더

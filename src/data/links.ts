@@ -1,3 +1,4 @@
+import { uncategorizedFolder, type VaultState } from "@/lib/vault";
 import type { Folder, Link } from "@/lib/types";
 
 export const folders: Folder[] = [
@@ -6,6 +7,7 @@ export const folders: Folder[] = [
   { id: "design", name: "디자인" },
   { id: "dev", name: "개발" },
   { id: "etc", name: "기타" },
+  uncategorizedFolder,
 ];
 
 export const sampleLinks: Link[] = [
@@ -61,3 +63,6 @@ export const sampleLinks: Link[] = [
     imageUrl: "/thumbs/naver.svg",
   },
 ];
+
+/** 저장된 데이터가 없을 때 쓰는 초기 상태. 항상 같은 객체여야 하므로 모듈 상수로 둔다. */
+export const seedVault: VaultState = { folders, links: sampleLinks };

@@ -1,13 +1,11 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
-import type { Folder, FolderId, Link } from "@/lib/types";
-
-/** 모달에서 입력받는 값. id는 상위에서 부여한다. */
-export type NewLinkInput = Omit<Link, "id">;
+import { useState, type FormEvent } from "react";
+import Dialog from "@/components/Dialog";
+import type { Folder, FolderId } from "@/lib/types";
+import type { NewLinkInput } from "@/lib/vault";
 
 interface AddLinkModalProps {
-  open: boolean;
   folders: Folder[];
   defaultFolderId: FolderId;
   onClose: () => void;
@@ -26,37 +24,21 @@ function isHttpUrl(value: string): boolean {
 }
 
 /**
- * 열림/닫힘만 담당한다. 닫히면 폼을 언마운트하므로
- * 다음에 열릴 때 입력값이 자연스럽게 초기화된다.
+ * 새 링크 입력 모달. 부모가 조건부 렌더링으로 열고 닫으므로
+ * 닫힐 때 언마운트되어 다음에 열릴 때 입력값이 초기화된다.
  */
-export default function AddLinkModal({ open, ...formProps }: AddLinkModalProps) {
-  if (!open) return null;
-  return <AddLinkDialog {...formProps} />;
-}
-
-type AddLinkDialogProps = Omit<AddLinkModalProps, "open">;
-
-function AddLinkDialog({
+export default function AddLinkModal({
   folders,
   defaultFolderId,
   onClose,
   onAdd,
-}: AddLinkDialogProps) {
+}: AddLinkModalProps) {
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [folderId, setFolderId] = useState<FolderId>(defaultFolderId);
   const [errors, setErrors] = useState<FieldErrors>({});
-
-  // ESC로 닫기
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -93,120 +75,109 @@ function AddLinkDialog({
   const errorClass = "mt-1.5 text-[var(--text-caption)] text-[var(--error)]";
 
   return (
-    <div
-      className="fixed inset-0 z-20 flex items-end justify-center bg-[var(--overlay)] p-0 sm:items-center sm:p-4"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="add-link-title"
-        onClick={(e) => e.stopPropagation()}
-        className="modal-panel w-full max-w-md rounded-t-[var(--radius-card)] p-5 sm:rounded-[var(--radius-card)] sm:p-6"
+    <Dialog titleId="add-link-title" onClose={onClose}>
+      <h2
+        id="add-link-title"
+        className="text-[var(--text-h2)] font-bold leading-[1.4] text-[var(--text)]"
       >
-        <h2
-          id="add-link-title"
-          className="text-[var(--text-h2)] font-bold leading-[1.4] text-[var(--text)]"
-        >
-          새 링크 추가
-        </h2>
+        새 링크 추가
+      </h2>
 
-        <form onSubmit={handleSubmit} noValidate className="mt-5 space-y-4">
-          <div>
-            <label htmlFor="link-url" className={labelClass}>
-              URL <span className="text-[var(--error)]">*</span>
-            </label>
-            <input
-              id="link-url"
-              type="url"
-              autoFocus
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://example.com"
-              className={inputClass(Boolean(errors.url))}
-              aria-invalid={Boolean(errors.url)}
-            />
-            {errors.url && <p className={errorClass}>{errors.url}</p>}
-          </div>
+      <form onSubmit={handleSubmit} noValidate className="mt-5 space-y-4">
+        <div>
+          <label htmlFor="link-url" className={labelClass}>
+            URL <span className="text-[var(--error)]">*</span>
+          </label>
+          <input
+            id="link-url"
+            type="url"
+            autoFocus
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://example.com"
+            className={inputClass(Boolean(errors.url))}
+            aria-invalid={Boolean(errors.url)}
+          />
+          {errors.url && <p className={errorClass}>{errors.url}</p>}
+        </div>
 
-          <div>
-            <label htmlFor="link-title" className={labelClass}>
-              제목 <span className="text-[var(--error)]">*</span>
-            </label>
-            <input
-              id="link-title"
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="링크 제목"
-              className={inputClass(Boolean(errors.title))}
-              aria-invalid={Boolean(errors.title)}
-            />
-            {errors.title && <p className={errorClass}>{errors.title}</p>}
-          </div>
+        <div>
+          <label htmlFor="link-title" className={labelClass}>
+            제목 <span className="text-[var(--error)]">*</span>
+          </label>
+          <input
+            id="link-title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="링크 제목"
+            className={inputClass(Boolean(errors.title))}
+            aria-invalid={Boolean(errors.title)}
+          />
+          {errors.title && <p className={errorClass}>{errors.title}</p>}
+        </div>
 
-          <div>
-            <label htmlFor="link-description" className={labelClass}>
-              설명
-            </label>
-            <textarea
-              id="link-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="이 링크가 무엇인지 간단히 적어 주세요"
-              rows={2}
-              className={`${inputClass(false)} resize-none`}
-            />
-          </div>
+        <div>
+          <label htmlFor="link-description" className={labelClass}>
+            설명
+          </label>
+          <textarea
+            id="link-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="이 링크가 무엇인지 간단히 적어 주세요"
+            rows={2}
+            className={`${inputClass(false)} resize-none`}
+          />
+        </div>
 
-          <div>
-            <label htmlFor="link-folder" className={labelClass}>
-              폴더
-            </label>
-            <select
-              id="link-folder"
-              value={folderId}
-              onChange={(e) => setFolderId(e.target.value as FolderId)}
-              className={inputClass(false)}
-            >
-              {folders.map((folder) => (
-                <option key={folder.id} value={folder.id}>
-                  {folder.name}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div>
+          <label htmlFor="link-folder" className={labelClass}>
+            폴더
+          </label>
+          <select
+            id="link-folder"
+            value={folderId}
+            onChange={(e) => setFolderId(e.target.value)}
+            className={inputClass(false)}
+          >
+            {folders.map((folder) => (
+              <option key={folder.id} value={folder.id}>
+                {folder.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-          <div>
-            <label htmlFor="link-image" className={labelClass}>
-              이미지 URL
-            </label>
-            <input
-              id="link-image"
-              type="url"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="비워 두면 대체 화면이 표시됩니다"
-              className={inputClass(Boolean(errors.imageUrl))}
-              aria-invalid={Boolean(errors.imageUrl)}
-            />
-            {errors.imageUrl && <p className={errorClass}>{errors.imageUrl}</p>}
-          </div>
+        <div>
+          <label htmlFor="link-image" className={labelClass}>
+            이미지 URL
+          </label>
+          <input
+            id="link-image"
+            type="url"
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            placeholder="비워 두면 대체 화면이 표시됩니다"
+            className={inputClass(Boolean(errors.imageUrl))}
+            aria-invalid={Boolean(errors.imageUrl)}
+          />
+          {errors.imageUrl && <p className={errorClass}>{errors.imageUrl}</p>}
+        </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn-secondary px-5 py-2.5 text-[15px]"
-            >
-              취소
-            </button>
-            <button type="submit" className="btn-primary px-5 py-2.5 text-[15px]">
-              추가
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex justify-end gap-2 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn-secondary px-5 py-2.5 text-[15px]"
+          >
+            취소
+          </button>
+          <button type="submit" className="btn-primary px-5 py-2.5 text-[15px]">
+            추가
+          </button>
+        </div>
+      </form>
+    </Dialog>
   );
 }
