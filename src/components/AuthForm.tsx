@@ -1,10 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { createClient } from "@/utils/supabase/client";
 
-type Mode = "signin" | "signup";
+export type AuthMode = "signin" | "signup";
+
+interface AuthFormProps {
+  /** 로그인 페이지는 "signin", 회원가입 페이지는 "signup" */
+  mode: AuthMode;
+}
 
 /** Supabase가 돌려주는 영문 오류를 사용자에게 보여 줄 문장으로 바꾼다 */
 function friendlyAuthError(message: string): string {
@@ -21,21 +27,21 @@ function friendlyAuthError(message: string): string {
   return `처리하지 못했습니다. (${message})`;
 }
 
-export default function LoginForm() {
+/**
+ * 로그인·회원가입 페이지에서 함께 쓰는 폼.
+ * - signin: 이메일, 비밀번호, 로그인 버튼, 회원가입 페이지 링크
+ * - signup: 이메일, 비밀번호, 비밀번호 확인, 회원가입 버튼, 로그인 페이지 링크
+ */
+export default function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>("signin");
+  const isSignup = mode === "signup";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const busyRef = useRef(false);
-
-  const switchMode = (next: Mode) => {
-    setMode(next);
-    setError(null);
-    setInfo(null);
-  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -45,9 +51,15 @@ export default function LoginForm() {
       setError("이메일과 비밀번호를 입력해 주세요.");
       return;
     }
-    if (mode === "signup" && password.length < 6) {
-      setError("비밀번호는 6자 이상이어야 합니다.");
-      return;
+    if (isSignup) {
+      if (password.length < 6) {
+        setError("비밀번호는 6자 이상이어야 합니다.");
+        return;
+      }
+      if (password !== passwordConfirm) {
+        setError("비밀번호가 일치하지 않습니다.");
+        return;
+      }
     }
 
     busyRef.current = true;
@@ -56,7 +68,7 @@ export default function LoginForm() {
     setInfo(null);
     try {
       const supabase = createClient();
-      if (mode === "signin") {
+      if (!isSignup) {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: trimmedEmail,
           password,
@@ -85,7 +97,6 @@ export default function LoginForm() {
         return;
       }
       setInfo(`${trimmedEmail} 로 확인 메일을 보냈습니다. 메일의 링크를 누른 뒤 로그인해 주세요.`);
-      setMode("signin");
     } finally {
       busyRef.current = false;
       setBusy(false);
@@ -97,23 +108,6 @@ export default function LoginForm() {
 
   return (
     <div className="card w-full max-w-sm p-6">
-      <div className="mb-5 flex gap-1 rounded-[var(--radius-button)] bg-[var(--bg)] p-1" role="tablist">
-        {(["signin", "signup"] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            role="tab"
-            aria-selected={mode === m}
-            onClick={() => switchMode(m)}
-            className={`flex-1 rounded-[10px] py-2 text-[15px] font-semibold transition ${
-              mode === m ? "tab-active" : "text-[var(--text-sub)]"
-            }`}
-          >
-            {m === "signin" ? "로그인" : "회원가입"}
-          </button>
-        ))}
-      </div>
-
       <form onSubmit={handleSubmit} noValidate className="space-y-4" aria-busy={busy}>
         <div>
           <label htmlFor="email" className={labelClass}>
@@ -138,14 +132,31 @@ export default function LoginForm() {
           <input
             id="password"
             type="password"
-            autoComplete={mode === "signin" ? "current-password" : "new-password"}
+            autoComplete={isSignup ? "new-password" : "current-password"}
             value={password}
             disabled={busy}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={mode === "signup" ? "6자 이상" : "비밀번호"}
+            placeholder={isSignup ? "6자 이상" : "비밀번호"}
             className={inputClass}
           />
         </div>
+        {isSignup && (
+          <div>
+            <label htmlFor="password-confirm" className={labelClass}>
+              비밀번호 확인
+            </label>
+            <input
+              id="password-confirm"
+              type="password"
+              autoComplete="new-password"
+              value={passwordConfirm}
+              disabled={busy}
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+              placeholder="비밀번호를 한 번 더 입력"
+              className={inputClass}
+            />
+          </div>
+        )}
 
         {error && (
           <p role="alert" className="notice notice-error px-4 py-3 text-[var(--text-sub-size)] leading-[1.5]">
@@ -163,9 +174,19 @@ export default function LoginForm() {
           disabled={busy}
           className="btn-primary w-full py-3 text-[16px] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {busy ? "잠시만요…" : mode === "signin" ? "로그인" : "회원가입"}
+          {busy ? "잠시만요…" : isSignup ? "회원가입" : "로그인"}
         </button>
       </form>
+
+      <p className="mt-5 text-center text-[var(--text-sub-size)] text-[var(--text-sub)]">
+        {isSignup ? "이미 계정이 있으신가요? " : "아직 계정이 없으신가요? "}
+        <Link
+          href={isSignup ? "/login" : "/signup"}
+          className="font-semibold text-[var(--accent)] hover:opacity-80"
+        >
+          {isSignup ? "로그인" : "회원가입"}
+        </Link>
+      </p>
     </div>
   );
 }

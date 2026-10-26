@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseEnv } from "@/utils/supabase/env";
 
 /** 로그인 없이 열 수 있는 경로 */
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/signup"];
 
 /**
  * 요청마다 Supabase 세션 쿠키를 확인하고 만료가 가까우면 갱신한다.
