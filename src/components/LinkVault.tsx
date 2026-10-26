@@ -211,9 +211,11 @@ export default function LinkVault({ appName }: LinkVaultProps) {
           folders={folders}
           selected={effectiveSelected}
           counts={counts}
+          userEmail={user?.email ?? null}
           onSelect={setSelected}
           onRenameFolder={(id) => setDialog({ kind: "rename-folder", id })}
           onDeleteFolder={(id) => setDialog({ kind: "delete-folder", id })}
+          onSignOut={handleSignOut}
         />
         <section className="flex min-w-0 flex-1 flex-col gap-4" aria-label="링크 목록">
           {error && (

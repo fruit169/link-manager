@@ -28,14 +28,9 @@ export default function Header({ appName, userEmail, onNewFolder, onNewLink, onS
           >
             + 새 링크
           </button>
+          {/* 모바일 전용 로그아웃. 데스크톱에서는 좌측 사이드바 맨 아래 버튼을 쓴다. */}
           {userEmail !== null && (
-            <div className="ml-1 flex items-center gap-2 border-l border-[var(--disabled)] pl-3">
-              <span
-                className="hidden max-w-[12rem] truncate text-[var(--text-caption)] text-[var(--text-sub)] md:inline"
-                title={userEmail}
-              >
-                {userEmail}
-              </span>
+            <div className="ml-1 flex items-center border-l border-[var(--disabled)] pl-3 md:hidden">
               <button
                 type="button"
                 onClick={onSignOut}
