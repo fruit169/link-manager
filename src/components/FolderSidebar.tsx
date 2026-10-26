@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import ActionMenu from "@/components/ActionMenu";
 import { isSystemFolder } from "@/lib/vault";
 import {
@@ -98,6 +99,12 @@ export default function FolderSidebar({
         >
           로그아웃
         </button>
+        <Link
+          href="/privacy"
+          className="px-4 py-1.5 text-[var(--text-caption)] text-[var(--text-sub)] hover:opacity-80"
+        >
+          개인정보 처리방침
+        </Link>
       </div>
     </nav>
   );

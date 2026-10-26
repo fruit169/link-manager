@@ -257,6 +257,15 @@ export default function AuthForm({ mode }: AuthFormProps) {
           {isSignup ? "로그인" : "회원가입"}
         </Link>
       </p>
+      {isSignup && (
+        <p className="mt-3 text-center text-[var(--text-caption)] text-[var(--text-sub)]">
+          가입하면{" "}
+          <Link href="/privacy" className="font-semibold underline hover:opacity-80">
+            개인정보 처리방침
+          </Link>
+          에 따라 이메일과 비밀번호가 처리됩니다.
+        </p>
+      )}
     </div>
   );
 }
