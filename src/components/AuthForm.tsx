@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useRef, useState, type FormEvent } from "react";
 import Toast, { type ToastTone } from "@/components/Toast";
 import { friendlyAuthError } from "@/lib/auth-errors";
@@ -28,6 +29,7 @@ interface Notice {
  */
 export default function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const isSignup = mode === "signup";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,7 +38,43 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const [notice, setNotice] = useState<Notice | null>(null);
   const busyRef = useRef(false);
 
-  const closeNotice = useCallback(() => setNotice(null), []);
+  // 소셜 로그인 콜백(/auth/callback)이 실패하면 ?error= 를 붙여 로그인 페이지로 돌려보낸다
+  const callbackError = searchParams.get("error");
+  const visibleNotice: Notice | null =
+    notice ??
+    (callbackError
+      ? { tone: "error", text: "카카오 로그인에 실패했습니다. 다시 시도해 주세요." }
+      : null);
+
+  const closeNotice = useCallback(() => {
+    setNotice(null);
+    if (callbackError) router.replace(isSignup ? "/signup" : "/login");
+  }, [callbackError, isSignup, router]);
+
+  /** 카카오 계정으로 로그인. Supabase가 카카오 인증 후 /auth/callback 으로 돌려보낸다. */
+  const handleKakaoLogin = async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setNotice(null);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "kakao",
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=/` },
+      });
+      if (error) {
+        setNotice({ tone: "error", text: friendlyAuthError(error.message) });
+        busyRef.current = false;
+        setBusy(false);
+      }
+      // 성공하면 카카오 페이지로 이동하므로 busy 를 풀지 않는다
+    } catch {
+      setNotice({ tone: "error", text: "카카오 로그인을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요." });
+      busyRef.current = false;
+      setBusy(false);
+    }
+  };
 
   // 모든 칸을 채워야 버튼을 누를 수 있다 (회원가입은 비밀번호 확인까지)
   const filled = isSignup
@@ -115,12 +153,12 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
   return (
     <div className="card w-full max-w-sm p-6">
-      {notice && (
+      {visibleNotice && (
         <Toast
-          tone={notice.tone}
-          message={notice.text}
+          tone={visibleNotice.tone}
+          message={visibleNotice.text}
           onClose={closeNotice}
-          duration={notice.tone === "error" ? 4000 : 0}
+          duration={visibleNotice.tone === "error" ? 4000 : 0}
         />
       )}
 
@@ -181,6 +219,26 @@ export default function AuthForm({ mode }: AuthFormProps) {
         >
           {busy ? "잠시만요…" : isSignup ? "회원가입" : "로그인"}
         </button>
+
+        {!isSignup && (
+          <button
+            type="button"
+            onClick={handleKakaoLogin}
+            disabled={busy}
+            aria-label="카카오 로그인"
+            className="block w-full overflow-hidden rounded-[var(--radius-button)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {/* 카카오 공식 로그인 버튼 이미지 (600x90, 2배 해상도) */}
+            <Image
+              src="/kakao/kakao_login_large_wide.png"
+              alt="카카오 로그인"
+              width={600}
+              height={90}
+              priority
+              className="h-auto w-full"
+            />
+          </button>
+        )}
       </form>
 
       {!isSignup && (

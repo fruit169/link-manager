@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import AuthForm from "@/components/AuthForm";
 import AuthPage from "@/components/AuthPage";
 
@@ -9,7 +10,10 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <AuthPage>
-      <AuthForm mode="signin" />
+      {/* AuthForm 이 useSearchParams 를 쓰므로 Suspense 로 감싼다 */}
+      <Suspense fallback={null}>
+        <AuthForm mode="signin" />
+      </Suspense>
     </AuthPage>
   );
 }

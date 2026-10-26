@@ -21,7 +21,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  const fallback = new URL("/forgot-password", origin);
+  // 비밀번호 리셋 링크는 다시 요청하는 페이지로, 소셜 로그인은 로그인 페이지로 돌려보낸다
+  const fallback = new URL(next === "/reset-password" ? "/forgot-password" : "/login", origin);
   fallback.searchParams.set("error", searchParams.get("error_code") ?? "invalid_link");
   return NextResponse.redirect(fallback);
 }
