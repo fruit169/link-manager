@@ -2,8 +2,11 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseEnv } from "@/utils/supabase/env";
 
-/** 로그인 없이 열 수 있는 경로 */
-const PUBLIC_PATHS = ["/login", "/signup"];
+/** 로그인 없이 열 수 있는 경로. 로그인한 사용자가 오면 / 로 보낸다. */
+const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password"];
+
+/** 로그인 여부와 무관하게 그대로 통과시키는 경로 (메일 링크 콜백 등) */
+const PASSTHROUGH_PATHS = ["/auth/"];
 
 /**
  * 요청마다 Supabase 세션 쿠키를 확인하고 만료가 가까우면 갱신한다.
@@ -37,8 +40,12 @@ export const updateSession = async (request: NextRequest): Promise<NextResponse>
 
   const { pathname } = request.nextUrl;
   const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const isPassthrough = PASSTHROUGH_PATHS.some((p) => pathname.startsWith(p));
   const isApi = pathname.startsWith("/api/");
 
+  if (isPassthrough) {
+    return supabaseResponse;
+  }
   if (!signedIn && !isPublic && !isApi) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
