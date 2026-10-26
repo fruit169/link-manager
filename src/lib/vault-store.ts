@@ -58,6 +58,9 @@ const initialState: VaultStoreState = {
 let state: VaultStoreState = initialState;
 let supabase: SupabaseClient | null = null;
 let loadStarted = false;
+/** 불러오기 순번. 계정이 바뀌어 다시 불러오기 시작하면 올라가고, 이전 불러오기의 결과는 버린다. */
+let loadSeq = 0;
+let authWatchStarted = false;
 const listeners = new Set<() => void>();
 
 /**
@@ -92,10 +95,16 @@ function errorMessage(err: unknown): string {
   return "서버와 통신하지 못했습니다.";
 }
 
-/** 사용자 확인 → 데이터 불러오기 → (한 번만) localStorage 가져오기 */
+/**
+ * 사용자 확인 → 그 사용자의 데이터만 불러오기 → (사용자별로 한 번만) localStorage 가져오기.
+ * 진행 중에 계정이 바뀌어 새 불러오기가 시작되면(loadSeq 증가) 이 결과는 반영하지 않는다.
+ */
 async function load(): Promise<void> {
+  const seq = ++loadSeq;
+  const stale = () => seq !== loadSeq;
   try {
     const { data, error } = await client().auth.getUser();
+    if (stale()) return;
     if (error || !data.user) {
       setState({ status: "unauthenticated", user: null });
       return;
@@ -103,6 +112,7 @@ async function load(): Promise<void> {
     const user: AppUser = { id: data.user.id, email: data.user.email ?? "" };
 
     let vault = await repo.loadVault(client(), user.id);
+    if (stale()) return;
     let imported: VaultStoreState["imported"] = null;
 
     try {
@@ -120,16 +130,49 @@ async function load(): Promise<void> {
       }
     } catch (err) {
       // 가져오기 실패는 치명적이지 않다. 안내만 하고 서버 데이터로 계속 간다.
-      setState({ error: `이전 데이터를 가져오지 못했습니다. ${errorMessage(err)}` });
+      if (!stale()) setState({ error: `이전 데이터를 가져오지 못했습니다. ${errorMessage(err)}` });
     }
 
+    if (stale()) return;
     setState({ status: "ready", user, imported, ...vault });
   } catch (err) {
-    setState({ status: "error", error: errorMessage(err) });
+    if (!stale()) setState({ status: "error", error: errorMessage(err) });
   }
 }
 
+/** 스토어를 비운다. 다른 계정의 데이터가 화면에 남지 않도록 처음 상태로 되돌린다. */
+function resetStore(status: VaultStatus) {
+  pending.clear();
+  loadStarted = status === "loading";
+  setState({ ...initialState, status });
+}
+
+/**
+ * Supabase 인증 상태를 지켜보다가 계정이 바뀌면 처음부터 다시 불러온다.
+ * - 다른 사용자로 로그인되면(다른 탭 포함) 상태를 비우고 새 사용자의 데이터를 불러온다
+ * - 로그아웃되면 상태를 비운다
+ */
+function watchAuthChanges() {
+  if (authWatchStarted) return;
+  authWatchStarted = true;
+  client().auth.onAuthStateChange((event, session) => {
+    const nextUserId = session?.user.id ?? null;
+    const currentUserId = state.user?.id ?? null;
+
+    if (event === "SIGNED_OUT" || (nextUserId === null && currentUserId !== null)) {
+      resetStore("unauthenticated");
+      return;
+    }
+    // 첫 불러오기가 진행 중일 때 오는 INITIAL_SESSION 등은 그 불러오기가 처리한다
+    if (nextUserId !== null && nextUserId !== currentUserId && state.status !== "loading") {
+      resetStore("loading");
+      void load();
+    }
+  });
+}
+
 function ensureLoaded() {
+  watchAuthChanges();
   if (loadStarted) return;
   loadStarted = true;
   void load();
@@ -315,9 +358,7 @@ export function useVault(): VaultStoreState & VaultActions {
   const signOut = useCallback(async () => {
     await client().auth.signOut();
     // 다음 로그인(다른 계정일 수 있음)을 위해 스토어를 비운다. localStorage 데이터는 건드리지 않는다.
-    loadStarted = false;
-    pending.clear();
-    setState({ ...initialState, status: "unauthenticated" });
+    resetStore("unauthenticated");
   }, []);
 
   return {

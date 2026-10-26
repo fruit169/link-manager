@@ -101,10 +101,16 @@ function linkRow(userId: string, link: Link, folderId: number) {
   };
 }
 
+/**
+ * 로그인한 사용자의 폴더와 링크를 불러온다.
+ * RLS가 다른 사용자의 행을 이미 막지만, 코드에서도 user_id 로 한 번 더 걸러
+ * 현재 사용자의 데이터만 다루는 것을 분명히 한다.
+ */
 export async function loadVault(supabase: SupabaseClient, userId: string): Promise<VaultState> {
   const { data: folderRows, error: folderError } = await supabase
     .from("folders")
     .select(FOLDER_COLUMNS)
+    .eq("user_id", userId)
     .order("is_system", { ascending: true })
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
@@ -127,6 +133,7 @@ export async function loadVault(supabase: SupabaseClient, userId: string): Promi
   const { data: linkRows, error: linkError } = await supabase
     .from("links")
     .select(LINK_COLUMNS)
+    .eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (linkError) fail("링크 불러오기", linkError);
 
