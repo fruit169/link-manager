@@ -1,10 +1,13 @@
-import type { Metadata } from "next";
 import AuthPage from "@/components/AuthPage";
 import ResetPasswordForm from "@/components/ResetPasswordForm";
+import { pageMetadata } from "@/lib/site-metadata";
 
-export const metadata: Metadata = {
-  title: "비밀번호 재설정 · 나만의 링크 보관함",
-};
+export const metadata = pageMetadata({
+  title: "비밀번호 재설정",
+  description: "새 비밀번호를 설정합니다.",
+  path: "/reset-password",
+  noIndex: true,
+});
 
 export default function ResetPasswordPage() {
   return (

@@ -1,11 +1,14 @@
-import type { Metadata } from "next";
 import { Suspense } from "react";
 import AuthPage from "@/components/AuthPage";
 import ForgotPasswordForm from "@/components/ForgotPasswordForm";
+import { pageMetadata } from "@/lib/site-metadata";
 
-export const metadata: Metadata = {
-  title: "비밀번호 찾기 · 나만의 링크 보관함",
-};
+export const metadata = pageMetadata({
+  title: "비밀번호 찾기",
+  description: "가입한 이메일로 비밀번호 재설정 링크를 받습니다.",
+  path: "/forgot-password",
+  noIndex: true,
+});
 
 export default function ForgotPasswordPage() {
   return (
