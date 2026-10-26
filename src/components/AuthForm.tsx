@@ -36,9 +36,10 @@ interface Notice {
 
 /**
  * 로그인·회원가입 페이지에서 함께 쓰는 폼.
- * - signin: 이메일, 비밀번호, 로그인 버튼, 회원가입 페이지 링크. 알림은 폼 안에 보여 준다.
- * - signup: 이메일, 비밀번호, 비밀번호 확인, 회원가입 버튼, 로그인 페이지 링크.
- *           세 칸을 모두 채워야 버튼이 활성화되고, 알림은 화면 상단 토스트로 보여 준다.
+ * - signin: 이메일, 비밀번호, 로그인 버튼, 회원가입 페이지 링크
+ * - signup: 이메일, 비밀번호, 비밀번호 확인, 회원가입 버튼, 로그인 페이지 링크
+ * 모든 칸을 채워야 버튼이 활성화되고, 오류·안내는 화면 상단 토스트로 보여 준다.
+ * 성공하면 인덱스 페이지로 이동한다.
  */
 export default function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
@@ -52,7 +53,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
   const closeNotice = useCallback(() => setNotice(null), []);
 
-  // 회원가입은 세 칸을 모두 채워야 버튼을 누를 수 있다
+  // 모든 칸을 채워야 버튼을 누를 수 있다 (회원가입은 비밀번호 확인까지)
   const filled = isSignup
     ? Boolean(email.trim() && password && passwordConfirm)
     : Boolean(email.trim() && password);
@@ -129,7 +130,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
   return (
     <div className="card w-full max-w-sm p-6">
-      {isSignup && notice && (
+      {notice && (
         <Toast
           tone={notice.tone}
           message={notice.text}
@@ -188,18 +189,9 @@ export default function AuthForm({ mode }: AuthFormProps) {
           </div>
         )}
 
-        {!isSignup && notice && (
-          <p
-            role={notice.tone === "error" ? "alert" : "status"}
-            className={`notice notice-${notice.tone} px-4 py-3 text-[var(--text-sub-size)] leading-[1.5]`}
-          >
-            {notice.text}
-          </p>
-        )}
-
         <button
           type="submit"
-          disabled={busy || (isSignup && !filled)}
+          disabled={busy || !filled}
           className="btn-primary w-full py-3 text-[16px] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? "잠시만요…" : isSignup ? "회원가입" : "로그인"}
