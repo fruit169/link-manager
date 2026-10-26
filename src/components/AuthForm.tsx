@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
+import { useCallback, useRef, useState, type FormEvent } from "react";
+import Toast, { type ToastTone } from "@/components/Toast";
 import { createClient } from "@/utils/supabase/client";
 
 export type AuthMode = "signin" | "signup";
@@ -24,13 +25,20 @@ function friendlyAuthError(message: string): string {
     return "이메일 형식이 올바르지 않습니다.";
   if (m.includes("rate limit") || m.includes("too many")) return "요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.";
   if (m.includes("fetch") || m.includes("network")) return "서버에 연결하지 못했습니다. 네트워크를 확인해 주세요.";
+  if (m.includes("signup") && m.includes("disabled")) return "현재 회원가입이 막혀 있습니다. 관리자에게 문의해 주세요.";
   return `처리하지 못했습니다. (${message})`;
+}
+
+interface Notice {
+  tone: ToastTone;
+  text: string;
 }
 
 /**
  * 로그인·회원가입 페이지에서 함께 쓰는 폼.
- * - signin: 이메일, 비밀번호, 로그인 버튼, 회원가입 페이지 링크
- * - signup: 이메일, 비밀번호, 비밀번호 확인, 회원가입 버튼, 로그인 페이지 링크
+ * - signin: 이메일, 비밀번호, 로그인 버튼, 회원가입 페이지 링크. 알림은 폼 안에 보여 준다.
+ * - signup: 이메일, 비밀번호, 비밀번호 확인, 회원가입 버튼, 로그인 페이지 링크.
+ *           세 칸을 모두 채워야 버튼이 활성화되고, 알림은 화면 상단 토스트로 보여 준다.
  */
 export default function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
@@ -39,33 +47,42 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const busyRef = useRef(false);
+
+  const closeNotice = useCallback(() => setNotice(null), []);
+
+  // 회원가입은 세 칸을 모두 채워야 버튼을 누를 수 있다
+  const filled = isSignup
+    ? Boolean(email.trim() && password && passwordConfirm)
+    : Boolean(email.trim() && password);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (busyRef.current) return;
     const trimmedEmail = email.trim();
     if (!trimmedEmail || !password) {
-      setError("이메일과 비밀번호를 입력해 주세요.");
+      setNotice({ tone: "error", text: "이메일과 비밀번호를 입력해 주세요." });
       return;
     }
     if (isSignup) {
+      if (!passwordConfirm) {
+        setNotice({ tone: "error", text: "비밀번호 확인을 입력해 주세요." });
+        return;
+      }
       if (password.length < 6) {
-        setError("비밀번호는 6자 이상이어야 합니다.");
+        setNotice({ tone: "error", text: "비밀번호는 6자 이상이어야 합니다." });
         return;
       }
       if (password !== passwordConfirm) {
-        setError("비밀번호가 일치하지 않습니다.");
+        setNotice({ tone: "error", text: "비밀번호가 일치하지 않습니다." });
         return;
       }
     }
 
     busyRef.current = true;
     setBusy(true);
-    setError(null);
-    setInfo(null);
+    setNotice(null);
     try {
       const supabase = createClient();
       if (!isSignup) {
@@ -74,7 +91,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
           password,
         });
         if (signInError) {
-          setError(friendlyAuthError(signInError.message));
+          setNotice({ tone: "error", text: friendlyAuthError(signInError.message) });
           return;
         }
         router.replace("/");
@@ -87,16 +104,20 @@ export default function AuthForm({ mode }: AuthFormProps) {
         password,
       });
       if (signUpError) {
-        setError(friendlyAuthError(signUpError.message));
+        setNotice({ tone: "error", text: friendlyAuthError(signUpError.message) });
         return;
       }
       if (data.session) {
-        // 이메일 확인이 꺼져 있으면 바로 로그인된다
+        // 가입과 동시에 로그인되면 인덱스 페이지로 간다
         router.replace("/");
         router.refresh();
         return;
       }
-      setInfo(`${trimmedEmail} 로 확인 메일을 보냈습니다. 메일의 링크를 누른 뒤 로그인해 주세요.`);
+      // 이메일 확인이 켜져 있으면 세션이 없어 인덱스 페이지에 들어갈 수 없다. 안내만 한다.
+      setNotice({
+        tone: "info",
+        text: `${trimmedEmail} 로 확인 메일을 보냈습니다. 메일의 링크를 누른 뒤 로그인해 주세요.`,
+      });
     } finally {
       busyRef.current = false;
       setBusy(false);
@@ -108,6 +129,15 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
   return (
     <div className="card w-full max-w-sm p-6">
+      {isSignup && notice && (
+        <Toast
+          tone={notice.tone}
+          message={notice.text}
+          onClose={closeNotice}
+          duration={notice.tone === "error" ? 4000 : 0}
+        />
+      )}
+
       <form onSubmit={handleSubmit} noValidate className="space-y-4" aria-busy={busy}>
         <div>
           <label htmlFor="email" className={labelClass}>
@@ -158,20 +188,18 @@ export default function AuthForm({ mode }: AuthFormProps) {
           </div>
         )}
 
-        {error && (
-          <p role="alert" className="notice notice-error px-4 py-3 text-[var(--text-sub-size)] leading-[1.5]">
-            {error}
-          </p>
-        )}
-        {info && (
-          <p role="status" className="notice notice-info px-4 py-3 text-[var(--text-sub-size)] leading-[1.5]">
-            {info}
+        {!isSignup && notice && (
+          <p
+            role={notice.tone === "error" ? "alert" : "status"}
+            className={`notice notice-${notice.tone} px-4 py-3 text-[var(--text-sub-size)] leading-[1.5]`}
+          >
+            {notice.text}
           </p>
         )}
 
         <button
           type="submit"
-          disabled={busy}
+          disabled={busy || (isSignup && !filled)}
           className="btn-primary w-full py-3 text-[16px] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? "잠시만요…" : isSignup ? "회원가입" : "로그인"}
